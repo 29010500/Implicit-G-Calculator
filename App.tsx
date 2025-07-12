@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { fetchFinancialData } from './services/geminiService';
+import { fetchFinancialData } from './services/api';
 import TickerInput from './components/TickerInput';
 import ResultsDisplay from './components/ResultsDisplay';
 import LoadingSpinner from './components/LoadingSpinner';

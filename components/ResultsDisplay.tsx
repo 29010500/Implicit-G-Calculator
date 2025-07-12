@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FinancialData, GroundingSource } from '../types';
 import { PriceIcon, FCFIcon, WACCIcon, LinkIcon } from './Icon';

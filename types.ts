@@ -1,3 +1,4 @@
+
 export interface FinancialData {
   stockPrice: number;
   fcfPerShare: number;
