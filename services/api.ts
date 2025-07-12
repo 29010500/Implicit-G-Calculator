@@ -1,24 +1,39 @@
+import { FinancialData, GroundingSource } from "../types";
 
-import { GeminiApiResponse } from '../types';
+export async function fetchFinancialData(
+  query: string
+): Promise<{ data: FinancialData | null; sources: GroundingSource[] }> {
+  try {
+    const response = await fetch("/.netlify/functions/financialData", {
+      method: "POST",
+      body: JSON.stringify({ query }),
+    });
 
-/**
- * Fetches financial data by calling our secure Netlify serverless function.
- * @param query The stock ticker symbol or company name.
- * @returns A promise that resolves to the financial data and its sources.
- */
-export const fetchFinancialData = async (query: string): Promise<GeminiApiResponse> => {
-  const response = await fetch('/.netlify/functions/financialData', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query }),
-  });
+    if (!response.ok) {
+      throw new Error(\`HTTP error! status: \${response.status}\`);
+    }
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-    throw new Error(errorBody.error || `Request failed with status ${response.status}`);
+    const json = await response.json();
+
+    // Validar que contiene los datos esperados
+    if (json && typeof json.stockPrice === "number") {
+      const { stockPrice, open, high, low, previousClose, sources } = json;
+
+      return {
+        data: {
+          stockPrice,
+          open,
+          high,
+          low,
+          previousClose,
+        },
+        sources: sources || [],
+      };
+    }
+
+    return { data: null, sources: [] };
+  } catch (error) {
+    console.error("fetchFinancialData error:", error);
+    return { data: null, sources: [] };
   }
-
-  return response.json();
-};
+}
