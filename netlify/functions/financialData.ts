@@ -1,4 +1,7 @@
 const https = require("https");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI("d1p9r21r01qu436depvgd1p9r21r01qu436deq00");
 
 exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
@@ -8,10 +11,10 @@ exports.handler = async function (event, context) {
     };
   }
 
-  let ticker = null;
+  let query = null;
   try {
     const body = JSON.parse(event.body);
-    ticker = body.query;
+    query = body.query;
   } catch (e) {
     return {
       statusCode: 400,
@@ -19,52 +22,52 @@ exports.handler = async function (event, context) {
     };
   }
 
-  const apiKey = "d1p9r21r01qu436depvgd1p9r21r01qu436deq00"; // clave embebida para pruebas
-
-  if (!ticker || !apiKey) {
+  if (!query) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Missing ticker or API key" }),
+      body: JSON.stringify({ error: "Missing company name or ticker" }),
     };
   }
 
-  const url = `https://finnhub.io/api/v1/quote?symbol=${ticker.toUpperCase()}&token=${apiKey}`;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = "";
+    const prompt = `
+Dame los siguientes datos reales y actualizados de la empresa "${query}":
+- Precio de la acción actual
+- WACC estimado
+- Free Cash Flow por acción TTM
 
-      res.on("data", (chunk) => {
-        data += chunk;
-      });
+Devuélvelo en formato JSON con esta estructura exacta:
 
-      res.on("end", () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve({
-            statusCode: 200,
-            body: JSON.stringify({
-              ticker: ticker.toUpperCase(),
-              stockPrice: parsed.c,
-              open: parsed.o,
-              high: parsed.h,
-              low: parsed.l,
-              previousClose: parsed.pc,
-              sources: ["finnhub.io"],
-            }),
-          });
-        } catch (error) {
-          resolve({
-            statusCode: 500,
-            body: JSON.stringify({ error: "Invalid response from Finnhub" }),
-          });
-        }
-      });
-    }).on("error", (e) => {
-      reject({
-        statusCode: 500,
-        body: JSON.stringify({ error: "Failed to fetch data", details: e.message }),
-      });
-    });
-  });
+{
+  "ticker": "...",
+  "stockPrice": ...,
+  "wacc": ...,
+  "fcfPerShareTTM": ...,
+  "sources": ["..."]
+}
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}") + 1;
+    const jsonString = text.slice(jsonStart, jsonEnd);
+
+    const parsed = JSON.parse(jsonString);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(parsed),
+    };
+  } catch (error) {
+    console.error("Gemini error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to retrieve data from Gemini", details: error.message }),
+    };
+  }
 };
