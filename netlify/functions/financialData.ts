@@ -1,8 +1,25 @@
 const https = require("https");
 
 exports.handler = async function (event, context) {
-  const { ticker } = event.queryStringParameters || {};
-  const apiKey = "d1p9r21r01qu436depvgd1p9r21r01qu436deq00"; // Clave API embebida (temporal para pruebas)
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+  }
+
+  let ticker = null;
+  try {
+    const body = JSON.parse(event.body);
+    ticker = body.query;
+  } catch (e) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid JSON body" }),
+    };
+  }
+
+  const apiKey = "d1p9r21r01qu436depvgd1p9r21r01qu436deq00"; // clave embebida para pruebas
 
   if (!ticker || !apiKey) {
     return {
@@ -33,6 +50,7 @@ exports.handler = async function (event, context) {
               high: parsed.h,
               low: parsed.l,
               previousClose: parsed.pc,
+              sources: ["finnhub.io"],
             }),
           });
         } catch (error) {
