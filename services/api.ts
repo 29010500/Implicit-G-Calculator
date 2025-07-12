@@ -10,12 +10,11 @@ export async function fetchFinancialData(
     });
 
     if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
+      throw new Error("HTTP error! status: " + response.status);
     }
 
     const json = await response.json();
 
-    // Validar que contiene los datos esperados
     if (json && typeof json.stockPrice === "number") {
       const { stockPrice, open, high, low, previousClose, sources } = json;
 
