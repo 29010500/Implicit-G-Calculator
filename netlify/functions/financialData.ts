@@ -1,4 +1,3 @@
-const https = require("https");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI("d1p9r21r01qu436depvgd1p9r21r01qu436deq00");
@@ -53,21 +52,42 @@ Devuélvelo en formato JSON con esta estructura exacta:
     const response = await result.response;
     const text = response.text();
 
+    console.log("Respuesta cruda de Gemini:", text);
+
     const jsonStart = text.indexOf("{");
     const jsonEnd = text.lastIndexOf("}") + 1;
+
+    if (jsonStart === -1 || jsonEnd <= jsonStart) {
+      throw new Error("No se encontró estructura JSON en la respuesta");
+    }
+
     const jsonString = text.slice(jsonStart, jsonEnd);
 
-    const parsed = JSON.parse(jsonString);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      throw new Error("No se pudo parsear JSON generado por Gemini");
+    }
+
+    if (
+      !parsed ||
+      parsed.stockPrice == null ||
+      parsed.wacc == null ||
+      parsed.fcfPerShareTTM == null
+    ) {
+      throw new Error("La respuesta no contiene los campos financieros requeridos");
+    }
 
     return {
       statusCode: 200,
       body: JSON.stringify(parsed),
     };
   } catch (error) {
-    console.error("Gemini error:", error);
+    console.error("ERROR en financialData.ts:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to retrieve data from Gemini", details: error.message }),
+      body: JSON.stringify({ error: "Error al obtener datos desde Gemini", details: error.message }),
     };
   }
 };
