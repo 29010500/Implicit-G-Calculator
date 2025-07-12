@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Implicit Stock Growth Calculator",
+  "description": "An application to calculate the implicit growth rate of a stock's price using Free Cash Flow per share and the Weighted Average Cost of Capital (WACC), powered by the Gemini API.",
+  "requestFramePermissions": []
+}
